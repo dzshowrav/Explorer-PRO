@@ -2017,7 +2017,8 @@ class ArchiveEngine(
                             coroutineContext.ensureActive()
                             awaitIfPaused()
                             val entryName = if (file.isDirectory && !relativePath.endsWith("/")) "$relativePath/" else relativePath
-                            val entry = sevenZ.createArchiveEntry(file, entryName)
+                            val entry: ArchiveEntry = sevenZ.createArchiveEntry(file, entryName)
+                            @Suppress("DEPRECATION")
                             sevenZ.putArchiveEntry(entry)
                             if (!file.isDirectory) {
                                 BufferedInputStream(FileInputStream(file)).use { bis ->

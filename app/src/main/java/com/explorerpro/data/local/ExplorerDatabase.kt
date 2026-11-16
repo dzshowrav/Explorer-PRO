@@ -196,7 +196,7 @@ abstract class ExplorerDatabase : RoomDatabase() {
                     context.applicationContext,
                     ExplorerDatabase::class.java,
                     "explorer_pro.db"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(dropAllTables = true).build()
                 INSTANCE = instance
                 instance
             }

@@ -22,20 +22,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -138,6 +140,13 @@ fun FullScreenImageViewerDialog(
     var showMetadataOverlay by remember { mutableStateOf(true) }
 
     val currentIndex = galleryList.indexOfFirst { it.path == currentImage.path }.coerceAtLeast(0)
+    val filmstripState = rememberLazyListState()
+
+    LaunchedEffect(currentIndex, galleryList.size) {
+        if (galleryList.isNotEmpty() && currentIndex in galleryList.indices) {
+            filmstripState.animateScrollToItem(currentIndex)
+        }
+    }
 
     LaunchedEffect(slideshowPlaying, currentIndex) {
         if (slideshowPlaying && galleryList.size > 1) {
@@ -160,7 +169,7 @@ fun FullScreenImageViewerDialog(
                     .fillMaxSize()
                     .systemBarsPadding()
             ) {
-                // Top Viewer Control Bar
+                // Top Viewer Title Bar — keeps ample horizontal space for filename and image metadata
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -171,7 +180,11 @@ fun FullScreenImageViewerDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Close viewer", tint = Color.White)
                     }
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
                         Text(
                             text = currentImage.name,
                             style = MaterialTheme.typography.titleMedium,
@@ -182,36 +195,17 @@ fun FullScreenImageViewerDialog(
                         Text(
                             text = "${currentIndex + 1} of ${galleryList.size} • ${currentImage.dimensionsText ?: "Image"} • ${FormatDetectorAndMetadataEngine.formatBytes(currentImage.sizeBytes)}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF94A3B8)
+                            color = Color(0xFF94A3B8),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                    IconButton(onClick = { rotationDegrees = (rotationDegrees + 90f) % 360f }) {
-                        Icon(Icons.Default.RotateRight, contentDescription = "Rotate 90°", tint = Color.White)
-                    }
-                    IconButton(onClick = {
-                        scale = if (scale > 1.05f) 1f else 2f
-                        offset = Offset.Zero
-                    }) {
-                        Icon(Icons.Default.FitScreen, contentDescription = "Reset / Toggle Zoom", tint = Color.White)
-                    }
-                    IconButton(onClick = { slideshowPlaying = !slideshowPlaying }) {
+                    IconButton(onClick = { showMetadataOverlay = !showMetadataOverlay }) {
                         Icon(
-                            imageVector = if (slideshowPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = "Slideshow",
-                            tint = if (slideshowPlaying) FluentAmber400 else Color.White
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Toggle image info",
+                            tint = if (showMetadataOverlay) FluentAmber400 else Color.White
                         )
-                    }
-                    IconButton(onClick = { onToggleFavorite(currentImage) }) {
-                        Icon(Icons.Default.Star, contentDescription = "Favorite", tint = FluentAmber400)
-                    }
-                    IconButton(onClick = { onShare(currentImage) }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White)
-                    }
-                    IconButton(onClick = {
-                        onDelete(currentImage)
-                        onDismiss()
-                    }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = FluentRose400)
                     }
                 }
 
@@ -315,8 +309,48 @@ fun FullScreenImageViewerDialog(
                     }
                 }
 
+                // Bottom Action Toolbar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xEE0D1B2A))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { rotationDegrees = (rotationDegrees + 90f) % 360f }) {
+                        Icon(Icons.AutoMirrored.Filled.RotateRight, contentDescription = "Rotate 90°", tint = Color.White)
+                    }
+                    IconButton(onClick = {
+                        scale = if (scale > 1.05f) 1f else 2f
+                        offset = Offset.Zero
+                    }) {
+                        Icon(Icons.Default.FitScreen, contentDescription = "Reset / Toggle Zoom", tint = Color.White)
+                    }
+                    IconButton(onClick = { slideshowPlaying = !slideshowPlaying }) {
+                        Icon(
+                            imageVector = if (slideshowPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = "Slideshow",
+                            tint = if (slideshowPlaying) FluentAmber400 else Color.White
+                        )
+                    }
+                    IconButton(onClick = { onToggleFavorite(currentImage) }) {
+                        Icon(Icons.Default.Star, contentDescription = "Favorite", tint = FluentAmber400)
+                    }
+                    IconButton(onClick = { onShare(currentImage) }) {
+                        Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White)
+                    }
+                    IconButton(onClick = {
+                        onDelete(currentImage)
+                        onDismiss()
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = FluentRose400)
+                    }
+                }
+
                 // Bottom Filmstrip Gallery
                 LazyRow(
+                    state = filmstripState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xEE0D1B2A))

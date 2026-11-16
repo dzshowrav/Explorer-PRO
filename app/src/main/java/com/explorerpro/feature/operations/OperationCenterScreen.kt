@@ -12,8 +12,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Cancel
@@ -36,7 +39,6 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FolderSpecial
@@ -387,29 +389,39 @@ fun OperationCenterModal(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                .padding(horizontal = 8.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 IconButton(onClick = onDismiss) {
                                     Icon(Icons.Default.Close, contentDescription = "Close Operation Center")
                                 }
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Operation Center",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = "${activeTasks.size} active • ${tasks.count { it.status == OperationStatus.COMPLETED }} completed • ${historyLogs.size} persisted logs",
+                                        text = "${activeTasks.size} active • ${tasks.count { it.status == OperationStatus.COMPLETED }} completed • ${historyLogs.size} logs",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
                                 OutlinedButton(
                                     onClick = {
                                         sortOrder = if (sortOrder == OperationSortOrder.NEWEST_FIRST) {
@@ -417,11 +429,19 @@ fun OperationCenterModal(
                                         } else {
                                             OperationSortOrder.NEWEST_FIRST
                                         }
-                                    }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 36.dp)
                                 ) {
                                     Icon(Icons.Default.SwapVert, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text(sortOrder.label, style = MaterialTheme.typography.labelMedium)
+                                    Text(
+                                        text = sortOrder.label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
 
                                 IconButton(
@@ -947,7 +967,7 @@ private fun DetailRow(label: String, value: String) {
 
 fun iconForOperationType(type: OperationType): ImageVector = when (type) {
     OperationType.COPY -> Icons.Default.ContentCopy
-    OperationType.MOVE, OperationType.RESTORE -> Icons.Default.DriveFileMove
+    OperationType.MOVE, OperationType.RESTORE -> Icons.AutoMirrored.Filled.DriveFileMove
     OperationType.DELETE, OperationType.RECYCLE -> Icons.Default.Delete
     OperationType.BATCH_RENAME -> Icons.Default.DriveFileRenameOutline
     OperationType.CHECKSUM_VERIFY, OperationType.ARCHIVE_VERIFY -> Icons.Default.Security

@@ -3,6 +3,8 @@ package com.explorerpro.core.domain.actions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
+import androidx.compose.material.icons.automirrored.filled.ManageSearch
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
@@ -23,8 +25,6 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ManageSearch
-import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -639,7 +639,7 @@ object QuickActionResolver {
                 id = QuickActionId.NEW_FILE,
                 title = "New File",
                 subtitle = "Create empty text, script or config file",
-                icon = Icons.Default.NoteAdd,
+                icon = Icons.AutoMirrored.Filled.NoteAdd,
                 category = QuickActionCategory.CREATE,
                 requiresWriteAccess = true
             )
@@ -743,7 +743,7 @@ object QuickActionResolver {
                 id = QuickActionId.SEARCH_TOGGLE_RECURSIVE,
                 title = if (context.isRecursiveSearch) "Switch to Current Folder Only" else "Search Subfolders Recursively",
                 subtitle = if (context.isRecursiveSearch) "Currently searching deep subfolders" else "Currently searching immediate folder",
-                icon = Icons.Default.ManageSearch,
+                icon = Icons.AutoMirrored.Filled.ManageSearch,
                 category = QuickActionCategory.SEARCH
             ),
             QuickAction(
@@ -757,7 +757,7 @@ object QuickActionResolver {
         return ResolvedFabModel(
             visible = true,
             primaryTitle = "Search Options",
-            primaryIcon = Icons.Default.ManageSearch,
+            primaryIcon = Icons.AutoMirrored.Filled.ManageSearch,
             primaryDirectAction = actions.first(),
             speedDialActions = actions
         )

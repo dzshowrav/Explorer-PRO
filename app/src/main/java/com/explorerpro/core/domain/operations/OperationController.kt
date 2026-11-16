@@ -10,6 +10,7 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.explorerpro.R
 import com.explorerpro.data.local.ExplorerDao
 import com.explorerpro.data.local.OperationLogEntity
 import com.explorerpro.domain.model.FileOperationTask
@@ -158,8 +159,14 @@ class OperationNotificationManager(private val context: Context) {
                 else -> task.status.label
             }
 
+            val smallIconRes = when {
+                isOngoing -> R.drawable.ic_stat_loading
+                task.status == OperationStatus.FAILED -> android.R.drawable.stat_notify_error
+                else -> R.drawable.ic_stat_done
+            }
+
             val builder = NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setSmallIcon(smallIconRes)
                 .setContentTitle(task.title)
                 .setContentText(contentText)
                 .setOnlyAlertOnce(true)
@@ -167,7 +174,6 @@ class OperationNotificationManager(private val context: Context) {
                 .setAutoCancel(!isOngoing)
 
             if (isOngoing) {
-                builder.setSmallIcon(android.R.drawable.stat_sys_download)
                 builder.setProgress(100, pct, task.indeterminate)
             } else {
                 builder.setProgress(0, 0, false)

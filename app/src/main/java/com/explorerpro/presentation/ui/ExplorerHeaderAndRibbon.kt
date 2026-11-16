@@ -23,6 +23,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
@@ -31,7 +33,6 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.ContentPaste
@@ -46,7 +47,6 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.RestorePage
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
@@ -321,7 +321,7 @@ fun ExplorerTopBarAndRibbon(
                                 )
                                 DropdownMenuItem(
                                     text = { Text("New File") },
-                                    leadingIcon = { Icon(Icons.Default.NoteAdd, contentDescription = null) },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.NoteAdd, contentDescription = null) },
                                     onClick = {
                                         showOverflowMenu = false
                                         onNewNoteClick()
@@ -532,7 +532,7 @@ fun ExplorerTopBarAndRibbon(
                                     )
                                     DropdownMenuItem(
                                         text = { Text("Compare Panes") },
-                                        leadingIcon = { Icon(Icons.Default.CompareArrows, contentDescription = null) },
+                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
                                             onComparePanes()

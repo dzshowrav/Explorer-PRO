@@ -1,0 +1,78 @@
+name: Build Signed Release APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Run Unit & Robolectric Tests
+        run: gradle :app:testDebugUnitTest
+
+      - name: Materialize or Generate Production Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > my-upload-key.jks
+          elif [ ! -f "my-upload-key.jks" ]; then
+            echo "Generating initial production keystore..."
+            keytool -genkeypair -v \
+              -storetype PKCS12 \
+              -keystore my-upload-key.jks \
+              -alias upload \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "${STORE_PASSWORD:-ExplorerProReleaseKey2026}" \
+              -keypass "${KEY_PASSWORD:-ExplorerProReleaseKey2026}" \
+              -dname "CN=ExplorerPro,O=NativeAndroid,C=US"
+          fi
+
+      - name: Build Signed Release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'ExplorerProReleaseKey2026' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'ExplorerProReleaseKey2026' }}
+        run: gradle :app:assembleRelease
+
+      - name: Verify APK Signature & Manifest Hardening
+        run: |
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK_PATH"
+          apksigner verify --verbose "$APK_PATH"
+
+      - name: Upload Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: explorer-pro-signed-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 30

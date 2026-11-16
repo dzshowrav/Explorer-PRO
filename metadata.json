@@ -1,0 +1,6 @@
+{
+  "name": "Explorer Pro",
+  "description": "Professional native Android file manager inspired by Windows Explorer with dual-pane browsing, tabs, archive management, universal thumbnails, and folder intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Explorer Pro</string>
+    <string name="subtitle_explorer">Windows Explorer-Grade Native File Manager</string>
+    <string name="tab_new">New Tab</string>
+    <string name="tab_duplicate">Duplicate Tab</string>
+    <string name="tab_close">Close Tab</string>
+    <string name="tab_reopen_closed">Reopen Closed Tab</string>
+    <string name="dual_pane_toggle">Dual-Pane Mode</string>
+    <string name="swap_panes">Swap Panes</string>
+    <string name="compare_panes">Compare Folders</string>
+    <string name="view_mode_grid">Grid View</string>
+    <string name="view_mode_simple_list">Simple List View</string>
+    <string name="view_mode_detailed_list">Detailed List View</string>
+    <string name="action_new_folder">New Folder</string>
+    <string name="action_new_file">New Text Note</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_move">Move</string>
+    <string name="action_paste">Paste</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_batch_rename">Batch Rename</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_compress">Compress to ZIP</string>
+    <string name="action_extract">Extract Archive</string>
+    <string name="action_properties">Properties &amp; SHA-256</string>
+    <string name="action_favorite">Toggle Favorite</string>
+    <string name="action_share">Share</string>
+    <string name="action_mount_saf">Mount External Folder (SAF)</string>
+    <string name="search_hint">Search filename, extension, format, size…</string>
+    <string name="empty_folder_message">This folder is empty. Create a file, folder, or archive using the Ribbon toolbar.</string>
+    <string name="operation_center_title">Operation Center</string>
+    <string name="storage_analyzer_title">Storage Intelligence &amp; Duplicates</string>
+    <string name="recycle_bin_title">Recycle Bin</string>
+</resources>

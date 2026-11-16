@@ -2017,9 +2017,8 @@ class ArchiveEngine(
                             coroutineContext.ensureActive()
                             awaitIfPaused()
                             val entryName = if (file.isDirectory && !relativePath.endsWith("/")) "$relativePath/" else relativePath
-                            val entry: ArchiveEntry = sevenZ.createArchiveEntry(file, entryName)
-                            @Suppress("DEPRECATION")
-                            sevenZ.putArchiveEntry(entry)
+                            val sevenZEntry: SevenZArchiveEntry = sevenZ.createArchiveEntry(file, entryName)
+                            putSevenZArchiveEntryCompat(sevenZ, sevenZEntry)
                             if (!file.isDirectory) {
                                 BufferedInputStream(FileInputStream(file)).use { bis ->
                                     var read: Int
@@ -2207,6 +2206,27 @@ class ArchiveEngine(
         ArchiveCreateFormat.ZSTD -> ZstdCompressorOutputStream(rawOut, compressionLevel.zstdLevel)
         ArchiveCreateFormat.TAR_LZMA -> LZMACompressorOutputStream(rawOut)
         else -> rawOut
+    }
+
+    /**
+     * Calls the modern non-deprecated [SevenZOutputFile.putArchiveEntry(SevenZArchiveEntry)] API
+     * from Apache Commons Compress 1.26.1+. When running under Robolectric's instrumented Android
+     * boot jar (which bundles an older `SevenZOutputFile` that only exposes `putArchiveEntry(ArchiveEntry)`),
+     * cleanly falls back to the `ArchiveEntry` overload without triggering compile-time deprecations.
+     */
+    private fun putSevenZArchiveEntryCompat(
+        sevenZ: SevenZOutputFile,
+        entry: SevenZArchiveEntry
+    ) {
+        try {
+            sevenZ.putArchiveEntry(entry)
+        } catch (_: NoSuchMethodError) {
+            val legacyMethod = SevenZOutputFile::class.java.getMethod(
+                "putArchiveEntry",
+                ArchiveEntry::class.java
+            )
+            legacyMethod.invoke(sevenZ, entry)
+        }
     }
 
     private suspend fun writeTarEntries(

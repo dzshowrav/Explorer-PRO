@@ -107,6 +107,13 @@ data class ArchiveHistoryEntity(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "custom_folder_icons")
+data class CustomFolderIconEntity(
+    @PrimaryKey val path: String,
+    val iconId: String,
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
 @Dao
 interface ExplorerDao {
     @Query("SELECT * FROM favorites ORDER BY addedAt DESC")
@@ -168,6 +175,15 @@ interface ExplorerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertArchiveHistory(entity: ArchiveHistoryEntity)
+
+    @Query("SELECT * FROM custom_folder_icons")
+    fun observeCustomFolderIcons(): Flow<List<CustomFolderIconEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertCustomFolderIcon(entity: CustomFolderIconEntity)
+
+    @Query("DELETE FROM custom_folder_icons WHERE path = :path")
+    suspend fun deleteCustomFolderIcon(path: String)
 }
 
 @Database(
@@ -178,9 +194,10 @@ interface ExplorerDao {
         TabSessionEntity::class,
         OperationLogEntity::class,
         FolderStatsCacheEntity::class,
-        ArchiveHistoryEntity::class
+        ArchiveHistoryEntity::class,
+        CustomFolderIconEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class ExplorerDatabase : RoomDatabase() {

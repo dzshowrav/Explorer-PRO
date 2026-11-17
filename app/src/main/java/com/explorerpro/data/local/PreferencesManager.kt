@@ -44,7 +44,9 @@ data class UserPreferencesState(
     val leftGroupBy: GroupBy = GroupBy.NONE,
     val rightGroupBy: GroupBy = GroupBy.NONE,
     val persistedSafUris: Set<String> = emptySet(),
-    val fabSettings: FabCustomizationSettings = FabCustomizationSettings()
+    val fabSettings: FabCustomizationSettings = FabCustomizationSettings(),
+    val enableDeviconIcons: Boolean = true,
+    val enableSmartFolderBadges: Boolean = true
 )
 
 class PreferencesManager(private val context: Context) {
@@ -77,6 +79,8 @@ class PreferencesManager(private val context: Context) {
         val FAB_HIDE_KEYBOARD = booleanPreferencesKey("fab_hide_when_keyboard_open")
         val FAB_PLACEMENT = stringPreferencesKey("fab_placement_mode")
         val FAB_THEME = stringPreferencesKey("fab_theme_mode")
+        val ENABLE_DEVICON_ICONS = booleanPreferencesKey("enable_devicon_icons")
+        val ENABLE_SMART_FOLDER_BADGES = booleanPreferencesKey("enable_smart_folder_badges")
     }
 
     val preferencesFlow: Flow<UserPreferencesState> = context.dataStore.data.map { prefs ->
@@ -138,7 +142,9 @@ class PreferencesManager(private val context: Context) {
                 themeMode = runCatching {
                     FabThemeMode.valueOf(prefs[Keys.FAB_THEME] ?: FabThemeMode.FOLLOW_SYSTEM.name)
                 }.getOrDefault(FabThemeMode.FOLLOW_SYSTEM)
-            )
+            ),
+            enableDeviconIcons = prefs[Keys.ENABLE_DEVICON_ICONS] ?: true,
+            enableSmartFolderBadges = prefs[Keys.ENABLE_SMART_FOLDER_BADGES] ?: true
         )
     }
 
@@ -223,5 +229,13 @@ class PreferencesManager(private val context: Context) {
             prefs[Keys.FAB_PLACEMENT] = settings.placementMode.name
             prefs[Keys.FAB_THEME] = settings.themeMode.name
         }
+    }
+
+    suspend fun setEnableDeviconIcons(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.ENABLE_DEVICON_ICONS] = enabled }
+    }
+
+    suspend fun setEnableSmartFolderBadges(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.ENABLE_SMART_FOLDER_BADGES] = enabled }
     }
 }

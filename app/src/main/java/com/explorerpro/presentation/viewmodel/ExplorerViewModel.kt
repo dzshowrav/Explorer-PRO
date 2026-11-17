@@ -15,6 +15,7 @@ import com.explorerpro.core.filesystem.FormatDetectorAndMetadataEngine
 import com.explorerpro.core.filesystem.SortingAndGroupingEngine
 import com.explorerpro.core.filesystem.TermuxStorageBridge
 import com.explorerpro.data.local.ArchiveHistoryEntity
+import com.explorerpro.data.local.CustomFolderIconEntity
 import com.explorerpro.data.local.ExplorerDatabase
 import com.explorerpro.data.local.FavoriteEntity
 import com.explorerpro.data.local.OperationLogEntity
@@ -61,6 +62,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -94,6 +96,16 @@ class ExplorerViewModel(application: Application) : AndroidViewModel(application
 
     val archiveHistory: StateFlow<List<ArchiveHistoryEntity>> = dao.observeArchiveHistory()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val customFolderIcons: StateFlow<Map<String, String>> = dao.observeCustomFolderIcons()
+        .map { entities -> entities.associate { it.path to it.iconId } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    private val _iconPickerTargetEntry = MutableStateFlow<FileEntry?>(null)
+    val iconPickerTargetEntry: StateFlow<FileEntry?> = _iconPickerTargetEntry.asStateFlow()
+
+    private val _showDeviconBrowserDialog = MutableStateFlow(false)
+    val showDeviconBrowserDialog: StateFlow<Boolean> = _showDeviconBrowserDialog.asStateFlow()
 
     private val _leftPane = MutableStateFlow(PaneState(paneId = PaneId.LEFT))
     val leftPane: StateFlow<PaneState> = _leftPane.asStateFlow()
@@ -2193,6 +2205,43 @@ class ExplorerViewModel(application: Application) : AndroidViewModel(application
 
     fun setConflictResolution(resolution: com.explorerpro.domain.model.ConflictResolution) {
         viewModelScope.launch { preferencesManager.setConflictResolution(resolution) }
+    }
+
+    fun openCustomIconPicker(entry: FileEntry) {
+        _iconPickerTargetEntry.value = entry
+        _showDeviconBrowserDialog.value = true
+    }
+
+    fun openDeviconCatalogBrowser() {
+        _iconPickerTargetEntry.value = null
+        _showDeviconBrowserDialog.value = true
+    }
+
+    fun closeDeviconPicker() {
+        _showDeviconBrowserDialog.value = false
+        _iconPickerTargetEntry.value = null
+    }
+
+    fun setCustomFolderIcon(path: String, iconId: String) {
+        viewModelScope.launch {
+            dao.upsertCustomFolderIcon(CustomFolderIconEntity(path = path, iconId = iconId))
+            postMessage("Updated custom folder icon.")
+        }
+    }
+
+    fun clearCustomFolderIcon(path: String) {
+        viewModelScope.launch {
+            dao.deleteCustomFolderIcon(path)
+            postMessage("Reset folder icon to default.")
+        }
+    }
+
+    fun setEnableDeviconIcons(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setEnableDeviconIcons(enabled) }
+    }
+
+    fun setEnableSmartFolderBadges(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setEnableSmartFolderBadges(enabled) }
     }
 
     fun refreshBothPanes() {

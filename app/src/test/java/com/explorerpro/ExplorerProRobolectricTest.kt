@@ -607,4 +607,114 @@ class ExplorerProRobolectricTest {
         assertEquals(docFile.readText(), finalCheckDir.walkTopDown().first { it.name == "manifest.txt" }.readText())
         assertEquals(jsonFile.readText(), finalCheckDir.walkTopDown().first { it.name == "settings.json" }.readText())
     }
+
+    @Test
+    fun `verify all 657 Devicon SVGs bundled offline, extension & folder resolution, Room custom icons, and preferences`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        // 1. Every single Devicon technology (all 657) must load from assets/devicon/catalog.json with a valid non-empty SVG file
+        val catalog = com.explorerpro.core.icons.DeviconCatalogRepository.getCatalog(context)
+        assertEquals("Expected all 657 Devicon entries bundled offline", 657, catalog.size)
+
+        catalog.forEach { item ->
+            assertTrue("Display name blank for ${item.id}", item.displayName.isNotBlank())
+            context.assets.open("devicon/${item.assetFile}").use { stream ->
+                val bytes = stream.readBytes()
+                assertTrue("SVG asset empty for ${item.id}", bytes.isNotEmpty())
+                val textHead = bytes.decodeToString(0, minOf(bytes.size, 200))
+                assertTrue("Expected SVG content for ${item.id}", textHead.contains("<svg", ignoreCase = true))
+            }
+        }
+
+        // 2. Verify every single mapped ID in DeviconResolver resolves to a real item in catalog.json
+        com.explorerpro.core.icons.DeviconResolver.EXACT_FILENAME_TO_ICON_ID.forEach { (filename, iconId) ->
+            assertNotNull(
+                "Missing catalog item for exact filename '$filename' -> '$iconId'",
+                com.explorerpro.core.icons.DeviconCatalogRepository.getById(context, iconId)
+            )
+        }
+        com.explorerpro.core.icons.DeviconResolver.EXTENSION_TO_ICON_ID.forEach { (ext, iconId) ->
+            assertNotNull(
+                "Missing catalog item for extension '.$ext' -> '$iconId'",
+                com.explorerpro.core.icons.DeviconCatalogRepository.getById(context, iconId)
+            )
+        }
+        com.explorerpro.core.icons.DeviconResolver.SMART_FOLDER_NAME_TO_ICON_ID.forEach { (folderName, iconId) ->
+            assertNotNull(
+                "Missing catalog item for smart folder '$folderName' -> '$iconId'",
+                com.explorerpro.core.icons.DeviconCatalogRepository.getById(context, iconId)
+            )
+        }
+
+        // 3. Verify real file & folder resolution
+        fun fakeEntry(name: String, isDir: Boolean = false) = com.explorerpro.domain.model.FileEntry(
+            path = "/workspace/$name",
+            name = name,
+            extension = if (isDir) "" else name.substringAfterLast('.', ""),
+            mimeType = if (isDir) "inode/directory" else "text/plain",
+            detectedFormat = if (isDir) com.explorerpro.domain.model.DetectedFileFormat.DIRECTORY else com.explorerpro.domain.model.DetectedFileFormat.UTF8_TEXT,
+            sizeBytes = 64L,
+            lastModified = 1700000000000L,
+            createdDate = 1700000000000L,
+            isDirectory = isDir,
+            isHidden = name.startsWith("."),
+            permissions = "rw-"
+        )
+
+        assertEquals("kotlin", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("MainActivity.kt"))?.id)
+        assertEquals("python", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("train.py"))?.id)
+        assertEquals("rust", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("lib.rs"))?.id)
+        assertEquals("docker", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("Dockerfile"))?.id)
+        assertEquals("cmake", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("CMakeLists.txt"))?.id)
+        assertEquals("gradle", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("build.gradle.kts"))?.id)
+        assertEquals("npm", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry("package.json"))?.id)
+        assertEquals("git", com.explorerpro.core.icons.DeviconResolver.resolveFileIcon(context, fakeEntry(".gitignore"))?.id)
+
+        val gitFolder = fakeEntry(".git", isDir = true)
+        val regularFolder = fakeEntry("MyProjects", isDir = true)
+        assertEquals(
+            "git",
+            com.explorerpro.core.icons.DeviconResolver.resolveFolderBadgeIcon(
+                context = context,
+                entry = gitFolder,
+                customFolderIcons = emptyMap(),
+                enableSmartFolderBadges = true
+            )?.id
+        )
+        assertEquals(
+            "flutter",
+            com.explorerpro.core.icons.DeviconResolver.resolveFolderBadgeIcon(
+                context = context,
+                entry = regularFolder,
+                customFolderIcons = mapOf(regularFolder.path to "flutter"),
+                enableSmartFolderBadges = false
+            )?.id
+        )
+
+        // 4. Verify search & category filter on catalog
+        val searchResults = com.explorerpro.core.icons.DeviconCatalogRepository.search(
+            items = catalog,
+            query = "kotlin",
+            category = com.explorerpro.core.icons.DeviconCategory.LANGUAGES
+        )
+        assertTrue(searchResults.any { it.id == "kotlin" })
+
+        // 5. Verify Room CustomFolderIconEntity persistence & PreferencesManager Devicon toggles
+        val dao = com.explorerpro.data.local.ExplorerDatabase.getInstance(context).explorerDao()
+        dao.upsertCustomFolderIcon(com.explorerpro.data.local.CustomFolderIconEntity("/sdcard/Projects", "react"))
+        val persistedIcons = dao.observeCustomFolderIcons().first()
+        assertEquals("react", persistedIcons.firstOrNull { it.path == "/sdcard/Projects" }?.iconId)
+        dao.deleteCustomFolderIcon("/sdcard/Projects")
+        val afterDeleteIcons = dao.observeCustomFolderIcons().first()
+        assertFalse(afterDeleteIcons.any { it.path == "/sdcard/Projects" })
+
+        val prefsManager = com.explorerpro.data.local.PreferencesManager(context)
+        prefsManager.setEnableDeviconIcons(false)
+        prefsManager.setEnableSmartFolderBadges(false)
+        val updatedPrefs = prefsManager.preferencesFlow.first()
+        assertFalse(updatedPrefs.enableDeviconIcons)
+        assertFalse(updatedPrefs.enableSmartFolderBadges)
+        prefsManager.setEnableDeviconIcons(true)
+        prefsManager.setEnableSmartFolderBadges(true)
+    }
 }

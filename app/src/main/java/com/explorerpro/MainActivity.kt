@@ -132,6 +132,8 @@ import com.explorerpro.feature.operations.OperationCenterModal
 import com.explorerpro.presentation.ui.ArchiveInspectorDialog
 import com.explorerpro.presentation.ui.BatchRenameDialog
 import com.explorerpro.presentation.ui.CreateArchiveDialog
+import com.explorerpro.presentation.ui.DeviconImageLoader
+import com.explorerpro.presentation.ui.DeviconPickerDialog
 import com.explorerpro.presentation.ui.ExplorerPaneContainer
 import com.explorerpro.presentation.ui.ExplorerSettingsScreen
 import com.explorerpro.presentation.ui.ExplorerTopBarAndRibbon
@@ -151,6 +153,7 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        coil.Coil.setImageLoader { DeviconImageLoader.get(applicationContext) }
         enableEdgeToEdge()
         setContent {
             val explorerViewModel: ExplorerViewModel = viewModel()
@@ -218,6 +221,9 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
     val activeProgressDialogTaskId by viewModel.activeProgressDialogTaskId.collectAsStateWithLifecycle()
     val noticeDialog by viewModel.noticeDialog.collectAsStateWithLifecycle()
     val actionSheetEntry by viewModel.actionSheetEntry.collectAsStateWithLifecycle()
+    val customFolderIcons by viewModel.customFolderIcons.collectAsStateWithLifecycle()
+    val showDeviconBrowserDialog by viewModel.showDeviconBrowserDialog.collectAsStateWithLifecycle()
+    val iconPickerTargetEntry by viewModel.iconPickerTargetEntry.collectAsStateWithLifecycle()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -511,7 +517,8 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
         deleteConfirmationRequest != null ||
         activeProgressDialogTaskId != null ||
         noticeDialog != null ||
-        actionSheetEntry != null
+        actionSheetEntry != null ||
+        showDeviconBrowserDialog
 
     val resolvedFabModel = remember(
         activePaneState.currentPath,
@@ -787,6 +794,9 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
                             dualPaneEnabled = false,
                             workspaceRootPath = workspaceRootPath,
                             favoritePaths = favoritePathSet,
+                            customFolderIcons = customFolderIcons,
+                            enableDeviconIcons = prefs.enableDeviconIcons,
+                            enableSmartFolderBadges = prefs.enableSmartFolderBadges,
                             viewModel = viewModel,
                             onRenameRequest = { renameTargetEntry = it },
                             onConvertArchiveRequest = { convertTargetArchive = it },
@@ -802,6 +812,9 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
                                 dualPaneEnabled = true,
                                 workspaceRootPath = workspaceRootPath,
                                 favoritePaths = favoritePathSet,
+                                customFolderIcons = customFolderIcons,
+                                enableDeviconIcons = prefs.enableDeviconIcons,
+                                enableSmartFolderBadges = prefs.enableSmartFolderBadges,
                                 viewModel = viewModel,
                                 onRenameRequest = { renameTargetEntry = it },
                                 onConvertArchiveRequest = { convertTargetArchive = it },
@@ -823,6 +836,9 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
                                 dualPaneEnabled = true,
                                 workspaceRootPath = workspaceRootPath,
                                 favoritePaths = favoritePathSet,
+                                customFolderIcons = customFolderIcons,
+                                enableDeviconIcons = prefs.enableDeviconIcons,
+                                enableSmartFolderBadges = prefs.enableSmartFolderBadges,
                                 viewModel = viewModel,
                                 onRenameRequest = { renameTargetEntry = it },
                                 onConvertArchiveRequest = { convertTargetArchive = it },
@@ -843,6 +859,9 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
                                 dualPaneEnabled = true,
                                 workspaceRootPath = workspaceRootPath,
                                 favoritePaths = favoritePathSet,
+                                customFolderIcons = customFolderIcons,
+                                enableDeviconIcons = prefs.enableDeviconIcons,
+                                enableSmartFolderBadges = prefs.enableSmartFolderBadges,
                                 viewModel = viewModel,
                                 onRenameRequest = { renameTargetEntry = it },
                                 onConvertArchiveRequest = { convertTargetArchive = it },
@@ -864,6 +883,9 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
                                 dualPaneEnabled = true,
                                 workspaceRootPath = workspaceRootPath,
                                 favoritePaths = favoritePathSet,
+                                customFolderIcons = customFolderIcons,
+                                enableDeviconIcons = prefs.enableDeviconIcons,
+                                enableSmartFolderBadges = prefs.enableSmartFolderBadges,
                                 viewModel = viewModel,
                                 onRenameRequest = { renameTargetEntry = it },
                                 onConvertArchiveRequest = { convertTargetArchive = it },
@@ -1299,6 +1321,7 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
             onCopyFullPath = { viewModel.copyEntryFullPath(sheetEntry, preferRawSafUri = false) },
             onCopyFileName = { viewModel.copyEntryFileName(sheetEntry) },
             onToggleFavorite = { viewModel.toggleFavorite(sheetEntry) },
+            onSetCustomIcon = { viewModel.openCustomIconPicker(sheetEntry) },
             onShare = { viewModel.shareFileEntry(sheetEntry) },
             onProperties = { viewModel.openPropertiesDialog(sheetEntry) },
             onDelete = { viewModel.requestDeleteSingleEntry(sheetEntry) },
@@ -1329,7 +1352,30 @@ fun ExplorerProAppScreen(viewModel: ExplorerViewModel) {
                     runCatching { termuxSafLauncher.launch(intent) }
                         .onFailure { safTreeLauncher.launch(null) }
                 }
-            }
+            },
+            onToggleDeviconIcons = { viewModel.setEnableDeviconIcons(it) },
+            onToggleSmartFolderBadges = { viewModel.setEnableSmartFolderBadges(it) },
+            onOpenDeviconCatalogBrowser = { viewModel.openDeviconCatalogBrowser() }
+        )
+    }
+
+    // Devicon Picker / Full 657-Icon Catalog Dialog
+    if (showDeviconBrowserDialog) {
+        val targetFolder = iconPickerTargetEntry
+        DeviconPickerDialog(
+            targetFolderEntry = targetFolder,
+            currentCustomIconId = targetFolder?.let { customFolderIcons[it.path] },
+            onSelectIcon = { chosenId ->
+                if (targetFolder != null) {
+                    viewModel.setCustomFolderIcon(targetFolder.path, chosenId)
+                }
+            },
+            onClearCustomIcon = {
+                if (targetFolder != null) {
+                    viewModel.clearCustomFolderIcon(targetFolder.path)
+                }
+            },
+            onDismiss = { viewModel.closeDeviconPicker() }
         )
     }
 
@@ -1397,6 +1443,9 @@ private fun ExplorerPaneWrapper(
     dualPaneEnabled: Boolean,
     workspaceRootPath: String,
     favoritePaths: Set<String>,
+    customFolderIcons: Map<String, String> = emptyMap(),
+    enableDeviconIcons: Boolean = true,
+    enableSmartFolderBadges: Boolean = true,
     viewModel: ExplorerViewModel,
     onRenameRequest: (FileEntry) -> Unit,
     onConvertArchiveRequest: (FileEntry) -> Unit = {},
@@ -1463,6 +1512,10 @@ private fun ExplorerPaneWrapper(
             viewModel.setActivePane(paneId)
             viewModel.openFileActionBottomSheet(it)
         },
+        customFolderIcons = customFolderIcons,
+        enableDeviconIcons = enableDeviconIcons,
+        enableSmartFolderBadges = enableSmartFolderBadges,
+        onSetCustomIcon = { viewModel.openCustomIconPicker(it) },
         modifier = modifier
     )
 }

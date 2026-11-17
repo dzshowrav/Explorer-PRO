@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Palette
@@ -91,6 +92,9 @@ fun ExplorerSettingsScreen(
     onUpdateFabSettings: ((FabCustomizationSettings) -> FabCustomizationSettings) -> Unit,
     onOpenPermissionsDialog: () -> Unit,
     onOpenOrMountTermux: () -> Unit,
+    onToggleDeviconIcons: (Boolean) -> Unit = {},
+    onToggleSmartFolderBadges: (Boolean) -> Unit = {},
+    onOpenDeviconCatalogBrowser: () -> Unit = {},
     onResetFabDefaults: () -> Unit = { onUpdateFabSettings { FabCustomizationSettings() } },
     modifier: Modifier = Modifier
 ) {
@@ -281,6 +285,55 @@ fun ExplorerSettingsScreen(
                                 modifier = Modifier.testTag("settings_conflict_${policy.name.lowercase()}")
                             )
                         }
+                    }
+                }
+            }
+
+            // 2B. Developer Icons (Devicon - 657 Icons Bundled Offline)
+            item(key = "section_devicon") {
+                SettingsSectionCard(
+                    title = "Developer Icons (Devicon)",
+                    subtitle = "657 technology icons for code files, folders & custom badges",
+                    icon = Icons.Default.Code,
+                    testTag = "settings_section_devicon"
+                ) {
+                    SettingsSwitchRow(
+                        label = "Use Devicon File Icons",
+                        subtitle = "Display original colored Devicon SVGs for programming, config & build files",
+                        checked = prefs.enableDeviconIcons,
+                        onCheckedChange = onToggleDeviconIcons,
+                        testTag = "settings_switch_devicon_files"
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                    )
+
+                    SettingsSwitchRow(
+                        label = "Smart Folder Technology Badges",
+                        subtitle = "Auto-badge .git, node_modules, android, docker & framework directories",
+                        checked = prefs.enableSmartFolderBadges,
+                        onCheckedChange = onToggleSmartFolderBadges,
+                        testTag = "settings_switch_devicon_folders"
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    OutlinedButton(
+                        onClick = onOpenDeviconCatalogBrowser,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .minimumInteractiveComponentSize()
+                            .testTag("settings_browse_devicon_catalog")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Code,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Browse All 657 Devicon Icons")
                     }
                 }
             }

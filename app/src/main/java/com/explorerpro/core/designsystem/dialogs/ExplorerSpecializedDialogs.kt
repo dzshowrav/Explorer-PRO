@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
@@ -871,6 +872,7 @@ fun ExplorerFileActionBottomSheet(
     onCopyFullPath: () -> Unit,
     onCopyFileName: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onSetCustomIcon: () -> Unit = {},
     onShare: () -> Unit,
     onProperties: () -> Unit,
     onDelete: () -> Unit,
@@ -1028,6 +1030,17 @@ fun ExplorerFileActionBottomSheet(
                 onClick = onToggleFavorite
             )
         )
+        if (entry.isDirectory) {
+            add(
+                BottomSheetActionItem(
+                    id = "set_custom_icon",
+                    title = "Set Custom Folder Icon",
+                    subtitle = "Choose from 657 bundled Devicon technology icons",
+                    icon = Icons.Default.Palette,
+                    onClick = onSetCustomIcon
+                )
+            )
+        }
         if (!entry.isDirectory) {
             add(
                 BottomSheetActionItem(

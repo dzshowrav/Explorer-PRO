@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -83,6 +84,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -93,6 +95,7 @@ import coil.compose.AsyncImage
 import com.explorerpro.R
 import com.explorerpro.core.designsystem.progress.MinimalProgressIndicator
 import com.explorerpro.core.filesystem.FormatDetectorAndMetadataEngine
+import com.explorerpro.core.icons.DeviconResolver
 import com.explorerpro.domain.model.DetectedFileFormat
 import com.explorerpro.domain.model.FileCategory
 import com.explorerpro.domain.model.FileEntry
@@ -149,6 +152,10 @@ fun ExplorerPaneContainer(
     onRequestDeepFolderStats: () -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit = {},
     onOpenActionSheet: (FileEntry) -> Unit = {},
+    customFolderIcons: Map<String, String> = emptyMap(),
+    enableDeviconIcons: Boolean = true,
+    enableSmartFolderBadges: Boolean = true,
+    onSetCustomIcon: (FileEntry) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val borderColor = if (isActivePane && dualPaneEnabled) {
@@ -269,7 +276,11 @@ fun ExplorerPaneContainer(
                             onExtractArchiveToFolder = onExtractArchiveToFolder,
                             onConvertArchive = onConvertArchive,
                             onOpenActionSheet = onOpenActionSheet,
-                            onScrollDirectionChanged = onScrollDirectionChanged
+                            onScrollDirectionChanged = onScrollDirectionChanged,
+                            customFolderIcons = customFolderIcons,
+                            enableDeviconIcons = enableDeviconIcons,
+                            enableSmartFolderBadges = enableSmartFolderBadges,
+                            onSetCustomIcon = onSetCustomIcon
                         )
                         ViewMode.SIMPLE_LIST -> SimpleListFileBrowser(
                             paneState = paneState,
@@ -290,7 +301,11 @@ fun ExplorerPaneContainer(
                             onExtractArchiveToFolder = onExtractArchiveToFolder,
                             onConvertArchive = onConvertArchive,
                             onOpenActionSheet = onOpenActionSheet,
-                            onScrollDirectionChanged = onScrollDirectionChanged
+                            onScrollDirectionChanged = onScrollDirectionChanged,
+                            customFolderIcons = customFolderIcons,
+                            enableDeviconIcons = enableDeviconIcons,
+                            enableSmartFolderBadges = enableSmartFolderBadges,
+                            onSetCustomIcon = onSetCustomIcon
                         )
                         ViewMode.DETAILED_LIST -> DetailedListFileBrowser(
                             paneState = paneState,
@@ -312,7 +327,11 @@ fun ExplorerPaneContainer(
                             onExtractArchiveToFolder = onExtractArchiveToFolder,
                             onConvertArchive = onConvertArchive,
                             onOpenActionSheet = onOpenActionSheet,
-                            onScrollDirectionChanged = onScrollDirectionChanged
+                            onScrollDirectionChanged = onScrollDirectionChanged,
+                            customFolderIcons = customFolderIcons,
+                            enableDeviconIcons = enableDeviconIcons,
+                            enableSmartFolderBadges = enableSmartFolderBadges,
+                            onSetCustomIcon = onSetCustomIcon
                         )
                     }
                 }
@@ -386,7 +405,11 @@ private fun GridFileBrowser(
     onExtractArchiveToFolder: (FileEntry) -> Unit,
     onConvertArchive: (FileEntry) -> Unit,
     onOpenActionSheet: (FileEntry) -> Unit,
-    onScrollDirectionChanged: (Boolean) -> Unit
+    onScrollDirectionChanged: (Boolean) -> Unit,
+    customFolderIcons: Map<String, String>,
+    enableDeviconIcons: Boolean,
+    enableSmartFolderBadges: Boolean,
+    onSetCustomIcon: (FileEntry) -> Unit
 ) {
     val gridState = rememberLazyGridState()
     var prevIndex by remember { mutableIntStateOf(0) }
@@ -449,7 +472,10 @@ private fun GridFileBrowser(
                         UniversalFileThumbnail(
                             entry = entry,
                             iconSize = 42.dp,
-                            fillBounds = true
+                            fillBounds = true,
+                            customFolderIcons = customFolderIcons,
+                            enableDeviconIcons = enableDeviconIcons,
+                            enableSmartFolderBadges = enableSmartFolderBadges
                         )
                         if (isSelected) {
                             Icon(
@@ -494,6 +520,7 @@ private fun GridFileBrowser(
                                 onOpenActionSheet = { onOpenActionSheet(entry) },
                                 onShare = { onShareEntry(entry) },
                                 onProperties = { onInspectProperties(entry) },
+                                onSetCustomIcon = { onSetCustomIcon(entry) },
                                 onDelete = { onDeleteEntry(entry) }
                             )
                         }
@@ -544,7 +571,11 @@ private fun SimpleListFileBrowser(
     onExtractArchiveToFolder: (FileEntry) -> Unit,
     onConvertArchive: (FileEntry) -> Unit,
     onOpenActionSheet: (FileEntry) -> Unit,
-    onScrollDirectionChanged: (Boolean) -> Unit
+    onScrollDirectionChanged: (Boolean) -> Unit,
+    customFolderIcons: Map<String, String>,
+    enableDeviconIcons: Boolean,
+    enableSmartFolderBadges: Boolean,
+    onSetCustomIcon: (FileEntry) -> Unit
 ) {
     val listState = rememberLazyListState()
     var prevIndex by remember { mutableIntStateOf(0) }
@@ -603,7 +634,14 @@ private fun SimpleListFileBrowser(
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        UniversalFileThumbnail(entry = entry, iconSize = 24.dp, fillBounds = true)
+                        UniversalFileThumbnail(
+                            entry = entry,
+                            iconSize = 24.dp,
+                            fillBounds = true,
+                            customFolderIcons = customFolderIcons,
+                            enableDeviconIcons = enableDeviconIcons,
+                            enableSmartFolderBadges = enableSmartFolderBadges
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -668,6 +706,7 @@ private fun SimpleListFileBrowser(
                             onOpenActionSheet = { onOpenActionSheet(entry) },
                             onShare = { onShareEntry(entry) },
                             onProperties = { onInspectProperties(entry) },
+                            onSetCustomIcon = { onSetCustomIcon(entry) },
                             onDelete = { onDeleteEntry(entry) }
                         )
                     }
@@ -703,7 +742,11 @@ private fun DetailedListFileBrowser(
     onExtractArchiveToFolder: (FileEntry) -> Unit,
     onConvertArchive: (FileEntry) -> Unit,
     onOpenActionSheet: (FileEntry) -> Unit,
-    onScrollDirectionChanged: (Boolean) -> Unit
+    onScrollDirectionChanged: (Boolean) -> Unit,
+    customFolderIcons: Map<String, String>,
+    enableDeviconIcons: Boolean,
+    enableSmartFolderBadges: Boolean,
+    onSetCustomIcon: (FileEntry) -> Unit
 ) {
     val listState = rememberLazyListState()
     var prevIndex by remember { mutableIntStateOf(0) }
@@ -815,7 +858,14 @@ private fun DetailedListFileBrowser(
                                     .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
-                                UniversalFileThumbnail(entry = entry, iconSize = 20.dp, fillBounds = true)
+                                UniversalFileThumbnail(
+                                    entry = entry,
+                                    iconSize = 20.dp,
+                                    fillBounds = true,
+                                    customFolderIcons = customFolderIcons,
+                                    enableDeviconIcons = enableDeviconIcons,
+                                    enableSmartFolderBadges = enableSmartFolderBadges
+                                )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
@@ -916,6 +966,7 @@ private fun DetailedListFileBrowser(
                                 onOpenActionSheet = { onOpenActionSheet(entry) },
                                 onShare = { onShareEntry(entry) },
                                 onProperties = { onInspectProperties(entry) },
+                                onSetCustomIcon = { onSetCustomIcon(entry) },
                                 onDelete = { onDeleteEntry(entry) }
                             )
                         }
@@ -979,24 +1030,80 @@ private fun GroupSectionHeader(title: String, count: Int) {
 fun UniversalFileThumbnail(
     entry: FileEntry,
     iconSize: androidx.compose.ui.unit.Dp,
-    fillBounds: Boolean
+    fillBounds: Boolean,
+    customFolderIcons: Map<String, String> = emptyMap(),
+    enableDeviconIcons: Boolean = true,
+    enableSmartFolderBadges: Boolean = true
 ) {
+    val context = LocalContext.current
     if (!entry.isDirectory && entry.detectedFormat.isImage) {
         val model: Any = if (entry.isSafUri) android.net.Uri.parse(entry.path) else File(entry.path)
         AsyncImage(
             model = model,
+            imageLoader = DeviconImageLoader.get(context),
             contentDescription = entry.name,
             contentScale = ContentScale.Crop,
             modifier = if (fillBounds) Modifier.fillMaxSize() else Modifier.size(iconSize)
         )
+    } else if (entry.isDirectory) {
+        val badgeItem = remember(
+            entry.path,
+            entry.name,
+            customFolderIcons,
+            enableSmartFolderBadges
+        ) {
+            DeviconResolver.resolveFolderBadgeIcon(
+                context = context,
+                entry = entry,
+                customFolderIcons = customFolderIcons,
+                enableSmartFolderBadges = enableSmartFolderBadges
+            )
+        }
+        if (badgeItem != null) {
+            val badgeSize = (iconSize.value * 0.56f).dp.coerceIn(13.dp, 24.dp)
+            Box(
+                modifier = Modifier.size(iconSize + 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = entry.detectedFormat.displayName,
+                    tint = FluentFolderGold,
+                    modifier = Modifier.size(iconSize)
+                )
+                FolderDeviconBadgeOverlay(
+                    badgeItem = badgeItem,
+                    badgeSize = badgeSize,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
+        } else {
+            Icon(
+                imageVector = Icons.Default.Folder,
+                contentDescription = entry.detectedFormat.displayName,
+                tint = FluentFolderGold,
+                modifier = Modifier.size(iconSize)
+            )
+        }
     } else {
-        val (icon, tint) = resolveFileIconAndTint(entry)
-        Icon(
-            imageVector = icon,
-            contentDescription = entry.detectedFormat.displayName,
-            tint = tint,
-            modifier = Modifier.size(iconSize)
-        )
+        val deviconItem = remember(entry.name, entry.extension, enableDeviconIcons) {
+            if (enableDeviconIcons) DeviconResolver.resolveFileIcon(context, entry) else null
+        }
+        if (deviconItem != null) {
+            DeviconAssetIcon(
+                item = deviconItem,
+                size = iconSize,
+                contentDescription = "${entry.name} (${deviconItem.displayName})"
+            )
+        } else {
+            val (icon, tint) = resolveFileIconAndTint(entry)
+            Icon(
+                imageVector = icon,
+                contentDescription = entry.detectedFormat.displayName,
+                tint = tint,
+                modifier = Modifier.size(iconSize)
+            )
+        }
     }
 }
 
@@ -1078,6 +1185,7 @@ private fun FileEntryContextMenu(
     onOpenActionSheet: () -> Unit = {},
     onShare: () -> Unit,
     onProperties: () -> Unit,
+    onSetCustomIcon: () -> Unit = {},
     onDelete: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
@@ -1207,6 +1315,23 @@ private fun FileEntryContextMenu(
                 onToggleFavorite()
             }
         )
+        if (entry.isDirectory) {
+            DropdownMenuItem(
+                text = { Text("Set Custom Icon…") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                onClick = {
+                    onDismiss()
+                    onSetCustomIcon()
+                },
+                modifier = Modifier.testTag("context_set_custom_icon_${entry.name}")
+            )
+        }
         DropdownMenuItem(
             text = { Text("Rename") },
             leadingIcon = { Icon(Icons.Default.DriveFileRenameOutline, contentDescription = null) },
